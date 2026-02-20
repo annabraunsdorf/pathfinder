@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Pathfinder</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Title Screen -->
+    <div class="screen" id="screen-title">
+      <div class="screen-content center-content">
+        <div class="title-icon">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <circle cx="16" cy="16" r="10" stroke="#4ADE80" stroke-width="2"/>
+            <text x="16" y="20" text-anchor="middle" fill="#4ADE80" font-size="12" font-weight="600">1</text>
+            <circle cx="48" cy="24" r="10" stroke="#4ADE80" stroke-width="2"/>
+            <text x="48" y="28" text-anchor="middle" fill="#4ADE80" font-size="12" font-weight="600">A</text>
+            <circle cx="28" cy="48" r="10" stroke="#4ADE80" stroke-width="2"/>
+            <text x="28" y="52" text-anchor="middle" fill="#4ADE80" font-size="12" font-weight="600">2</text>
+            <line x1="24" y1="20" x2="40" y2="22" stroke="#4ADE80" stroke-width="1.5" opacity="0.5"/>
+            <line x1="42" y1="32" x2="34" y2="42" stroke="#4ADE80" stroke-width="1.5" opacity="0.5"/>
+          </svg>
+        </div>
+        <h1 class="title-heading">Pathfinder</h1>
+        <p class="subtitle">A cognitive assessment of mental flexibility and processing speed</p>
+        <button class="btn btn-primary" data-action="next">Get started</button>
+      </div>
+    </div>
+
+    <!-- Measures Screen -->
+    <div class="screen hidden" id="screen-measures">
+      <div class="screen-content center-content">
+        <h2 class="heading">What this measures</h2>
+        <div class="info-card">
+          <div class="info-item">
+            <span class="info-label">Mental flexibility</span>
+            <span class="info-desc">Your ability to switch between different rules</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Processing speed</span>
+            <span class="info-desc">How quickly you can scan and identify targets</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Working memory</span>
+            <span class="info-desc">Keeping track of where you are in the sequence</span>
+          </div>
+        </div>
+        <p class="body-text">This test is adapted from the Trail Making Test, a well-established neuropsychological assessment used in clinical and research settings.</p>
+        <button class="btn btn-primary" data-action="next">Next</button>
+      </div>
+    </div>
+
+    <!-- How It Works Screen -->
+    <div class="screen hidden" id="screen-howItWorks">
+      <div class="screen-content center-content">
+        <h2 class="heading">How it works</h2>
+        <div class="steps-list">
+          <div class="step-item">
+            <span class="step-number">1</span>
+            <div>
+              <span class="step-title">Alternate between numbers and letters</span>
+              <span class="step-desc">Tap in order: 1 &rarr; A &rarr; 2 &rarr; B &rarr; 3 &rarr; C ...</span>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="step-number">2</span>
+            <div>
+              <span class="step-title">Be fast and accurate</span>
+              <span class="step-desc">Your time and errors are both tracked</span>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="step-number">3</span>
+            <div>
+              <span class="step-title">3 rounds, increasing difficulty</span>
+              <span class="step-desc">More nodes are added each round</span>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary" data-action="next">Try a practice round</button>
+      </div>
+    </div>
+
+    <!-- Practice Screen -->
+    <div class="screen hidden" id="screen-practice">
+      <div class="game-area">
+        <div class="game-hud">
+          <span class="hud-label">Practice</span>
+        </div>
+        <div class="node-container" id="practice-nodes"></div>
+        <svg class="line-overlay" id="practice-lines"></svg>
+      </div>
+    </div>
+
+    <!-- Practice Complete -->
+    <div class="screen hidden" id="screen-practiceComplete">
+      <div class="screen-content center-content">
+        <div class="check-icon">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="24" r="22" stroke="#4ADE80" stroke-width="2"/>
+            <path d="M15 24L21 30L33 18" stroke="#4ADE80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2 class="heading">Nice. You're ready.</h2>
+        <p class="body-text">The real rounds won't highlight the next target. Work as quickly and accurately as you can.</p>
+        <button class="btn btn-primary" data-action="next">Start round 1</button>
+      </div>
+    </div>
+
+    <!-- Round Screens -->
+    <div class="screen hidden" id="screen-round1">
+      <div class="game-area">
+        <div class="game-hud">
+          <span class="hud-label">Round 1 of 3</span>
+          <span class="hud-timer" id="timer-round1">0.0s</span>
+        </div>
+        <div class="node-container" id="round1-nodes"></div>
+        <svg class="line-overlay" id="round1-lines"></svg>
+      </div>
+    </div>
+
+    <!-- Interstitial 2 -->
+    <div class="screen hidden" id="screen-interstitial2">
+      <div class="screen-content center-content">
+        <span class="round-badge">Round 1 complete</span>
+        <h2 class="heading">Round 2 of 3</h2>
+        <p class="body-text">This round has more nodes. Same rules &mdash; alternate numbers and letters.</p>
+        <button class="btn btn-primary" data-action="next">Continue</button>
+      </div>
+    </div>
+
+    <div class="screen hidden" id="screen-round2">
+      <div class="game-area">
+        <div class="game-hud">
+          <span class="hud-label">Round 2 of 3</span>
+          <span class="hud-timer" id="timer-round2">0.0s</span>
+        </div>
+        <div class="node-container" id="round2-nodes"></div>
+        <svg class="line-overlay" id="round2-lines"></svg>
+      </div>
+    </div>
+
+    <!-- Interstitial 3 -->
+    <div class="screen hidden" id="screen-interstitial3">
+      <div class="screen-content center-content">
+        <span class="round-badge">Round 2 complete</span>
+        <h2 class="heading">Round 3 of 3</h2>
+        <p class="body-text">Final round &mdash; the most nodes yet. Stay focused.</p>
+        <button class="btn btn-primary" data-action="next">Continue</button>
+      </div>
+    </div>
+
+    <div class="screen hidden" id="screen-round3">
+      <div class="game-area">
+        <div class="game-hud">
+          <span class="hud-label">Round 3 of 3</span>
+          <span class="hud-timer" id="timer-round3">0.0s</span>
+        </div>
+        <div class="node-container" id="round3-nodes"></div>
+        <svg class="line-overlay" id="round3-lines"></svg>
+      </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div class="screen hidden" id="screen-results">
+      <div class="screen-content results-content">
+        <h2 class="heading">Your Results</h2>
+        <div id="results-container"></div>
+        <button class="btn btn-primary" data-action="reset">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="nodes.js"></script>
+  <script src="scoring.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
