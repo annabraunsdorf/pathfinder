@@ -9,15 +9,27 @@
 
 var Scoring = (function () {
   // --- Tunable constants ---
-  var PAR_TIMES = [20, 30, 45]; // seconds per round
-  var PENALTY_PER_SECOND = 2;   // points lost per second over par
-  var ERROR_COST = 5;           // points lost per error
+  var PAR_TIMES = [10, 15, 20]; // seconds per round
+  var PENALTY_PER_SECOND = 3;   // points lost per second over par
+  var ERROR_COST = 8;           // points lost per error
   var ROUND_WEIGHTS = [0.20, 0.30, 0.50];
 
   var ROUND_LABELS = [
-    { short: 'Baseline Switching', rule: 'Numbers \u2194 Letters' },
-    { short: 'Semantic Retrieval', rule: 'Numbers \u2194 Months' },
-    { short: 'Inhibition + Reversal', rule: 'Reverse Numbers \u2194 Reverse Letters' }
+    {
+      short: 'Baseline Switching',
+      rule: 'Numbers \u2194 Letters',
+      detail: 'This round measures your baseline ability to alternate between two well-known sequences. Numbers and the alphabet are both \u201Coverlearned\u201D \u2014 you can recite them on autopilot. The challenge is switching between them under time pressure, which taxes processing speed and basic set-shifting.'
+    },
+    {
+      short: 'Semantic Retrieval',
+      rule: 'Numbers \u2194 Months',
+      detail: 'Months are familiar but accessed more slowly than the alphabet \u2014 you have to \u201Cthink through\u201D which one comes next rather than just reciting. This round tests how quickly you can retrieve information from deeper semantic memory while still maintaining the alternating pattern.'
+    },
+    {
+      short: 'Inhibition + Reversal',
+      rule: 'Reverse Numbers \u2194 Reverse Letters',
+      detail: 'Counting backward requires suppressing your automatic forward-counting instinct. Doing it across two sequences simultaneously taxes inhibitory control and working memory on top of the processing speed and flexibility tested in earlier rounds.'
+    }
   ];
 
   /**

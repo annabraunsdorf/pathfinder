@@ -136,6 +136,54 @@ html, body {
   margin-bottom: 20px;
 }
 
+/* Measures overview list */
+.measures-list {
+  width: 100%;
+  max-width: 340px;
+  text-align: left;
+  margin-bottom: 32px;
+}
+
+.measure-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.measure-item + .measure-item {
+  border-top: 1px solid var(--border);
+}
+
+.measure-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--green-dim);
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.measure-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.measure-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  display: block;
+  line-height: 1.4;
+}
+
 /* Stat Callout — research-backed highlights */
 .stat-callout {
   width: 100%;
@@ -510,6 +558,19 @@ html, body {
   color: var(--green);
   display: block;
   margin-top: 4px;
+}
+
+.round-detail-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.round-detail-text:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .interpretation-note {

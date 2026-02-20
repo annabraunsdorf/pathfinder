@@ -7,7 +7,7 @@
 
   // --- Screen flow ---
   var SCREENS = [
-    'title', 'processingSpeed', 'cognitiveFlexibility', 'howItWorks',
+    'title', 'measures', 'processingSpeed', 'cognitiveFlexibility', 'howItWorks',
     'practice', 'practiceComplete',
     'round1', 'interstitial2',
     'round2', 'interstitial3',
@@ -258,6 +258,7 @@
         html += ' &middot; ' + r.rounds[i].errors + ' error' + (r.rounds[i].errors !== 1 ? 's' : '');
       }
       html += '</div></div>';
+      html += '<div class="round-detail-text">' + r.roundLabels[i].detail + '</div>';
     }
     html += '</div>';
     // Interpretation note
