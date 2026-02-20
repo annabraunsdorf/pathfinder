@@ -8,7 +8,7 @@
 </head>
 <body>
   <div id="app">
-    <!-- Title Screen -->
+    <!-- Screen 1: Title -->
     <div class="screen" id="screen-title">
       <div class="screen-content center-content">
         <div class="title-icon">
@@ -24,59 +24,64 @@
           </svg>
         </div>
         <h1 class="title-heading">Pathfinder</h1>
-        <p class="subtitle">A cognitive assessment of mental flexibility and processing speed</p>
-        <button class="btn btn-primary" data-action="next">Get started</button>
-      </div>
-    </div>
-
-    <!-- Measures Screen -->
-    <div class="screen hidden" id="screen-measures">
-      <div class="screen-content center-content">
-        <h2 class="heading">What this measures</h2>
-        <div class="info-card">
-          <div class="info-item">
-            <span class="info-label">Mental flexibility</span>
-            <span class="info-desc">Your ability to switch between different rules</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">Processing speed</span>
-            <span class="info-desc">How quickly you can scan and identify targets</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">Working memory</span>
-            <span class="info-desc">Keeping track of where you are in the sequence</span>
-          </div>
-        </div>
-        <p class="body-text">This test is adapted from the Trail Making Test, a well-established neuropsychological assessment used in clinical and research settings.</p>
+        <p class="subtitle">Connect numbers and letters in alternating order as fast as you can.</p>
+        <p class="duration-note">~4 minutes</p>
         <button class="btn btn-primary" data-action="next">Next</button>
       </div>
     </div>
 
-    <!-- How It Works Screen -->
+    <!-- Screen 2: Processing Speed -->
+    <div class="screen hidden" id="screen-processingSpeed">
+      <div class="screen-content center-content">
+        <h2 class="heading">Processing Speed</h2>
+        <p class="body-text left-align">Processing speed is how quickly you take in information, make a decision, and respond. It's one of the strongest predictors of overall cognitive performance as you age.</p>
+        <div class="stat-callout">
+          <p class="stat-text">Research shows measurable declines in processing speed beginning as early as your mid-40s &mdash; and it's one of the first cognitive abilities to change with age.</p>
+          <p class="stat-source">Hoyer et al., 2004; Salthouse, 2000</p>
+        </div>
+        <p class="body-text left-align">In daily life, it shows up in moments like keeping up with a fast conversation, reacting while driving, or following instructions in real time.</p>
+        <button class="btn btn-primary" data-action="next">Next</button>
+      </div>
+    </div>
+
+    <!-- Screen 3: Cognitive Flexibility -->
+    <div class="screen hidden" id="screen-cognitiveFlexibility">
+      <div class="screen-content center-content">
+        <h2 class="heading">Cognitive Flexibility</h2>
+        <p class="body-text left-align">Cognitive flexibility is your ability to shift between different rules, tasks, or ways of thinking. It's what lets you adapt when plans change or switch gears between competing demands.</p>
+        <div class="stat-callout">
+          <p class="stat-text">Performance on cognitive flexibility tasks has been shown to predict independence in everyday activities like managing medications, cooking, and shopping &mdash; and is used clinically to screen for driving fitness.</p>
+          <p class="stat-source">Cahn-Weiner et al., 2002; American Medical Association</p>
+        </div>
+        <p class="body-text left-align">When flexibility slows down, you may notice it's harder to multitask, adjust to unexpected changes, or shift between topics in conversation.</p>
+        <button class="btn btn-primary" data-action="next">Next</button>
+      </div>
+    </div>
+
+    <!-- Screen 4: How It Works -->
     <div class="screen hidden" id="screen-howItWorks">
       <div class="screen-content center-content">
         <h2 class="heading">How it works</h2>
         <div class="steps-list">
           <div class="step-item">
-            <span class="step-number">1</span>
-            <div>
-              <span class="step-title">Alternate between numbers and letters</span>
-              <span class="step-desc">Tap in order: 1 &rarr; A &rarr; 2 &rarr; B &rarr; 3 &rarr; C ...</span>
-            </div>
+            <span class="step-bullet"></span>
+            <span class="step-text">Circles with numbers and letters will appear on screen</span>
           </div>
           <div class="step-item">
-            <span class="step-number">2</span>
-            <div>
-              <span class="step-title">Be fast and accurate</span>
-              <span class="step-desc">Your time and errors are both tracked</span>
-            </div>
+            <span class="step-bullet"></span>
+            <span class="step-text">Tap them in alternating order: 1 &rarr; A &rarr; 2 &rarr; B &rarr; 3 &rarr; C&hellip;</span>
           </div>
           <div class="step-item">
-            <span class="step-number">3</span>
-            <div>
-              <span class="step-title">3 rounds, increasing difficulty</span>
-              <span class="step-desc">More nodes are added each round</span>
-            </div>
+            <span class="step-bullet"></span>
+            <span class="step-text">Go as fast as you can while staying accurate</span>
+          </div>
+          <div class="step-item">
+            <span class="step-bullet"></span>
+            <span class="step-text">Wrong taps count as errors but won't stop the clock</span>
+          </div>
+          <div class="step-item">
+            <span class="step-bullet"></span>
+            <span class="step-text">There are 3 rounds &mdash; each one changes the rule</span>
           </div>
         </div>
         <button class="btn btn-primary" data-action="next">Try a practice round</button>
@@ -105,11 +110,12 @@
         </div>
         <h2 class="heading">Nice. You're ready.</h2>
         <p class="body-text">The real rounds won't highlight the next target. Work as quickly and accurately as you can.</p>
+        <p class="body-text-small">Each round will introduce a new rule. You'll see instructions before each one.</p>
         <button class="btn btn-primary" data-action="next">Start round 1</button>
       </div>
     </div>
 
-    <!-- Round Screens -->
+    <!-- Round 1: Numbers <-> Letters -->
     <div class="screen hidden" id="screen-round1">
       <div class="game-area">
         <div class="game-hud">
@@ -121,16 +127,32 @@
       </div>
     </div>
 
-    <!-- Interstitial 2 -->
+    <!-- Interstitial: Round 2 Rule Introduction -->
     <div class="screen hidden" id="screen-interstitial2">
       <div class="screen-content center-content">
         <span class="round-badge">Round 1 complete</span>
         <h2 class="heading">Round 2 of 3</h2>
-        <p class="body-text">This round has more nodes. Same rules &mdash; alternate numbers and letters.</p>
-        <button class="btn btn-primary" data-action="next">Continue</button>
+        <p class="interstitial-subheader">New rule: numbers and months</p>
+        <p class="body-text">This time, alternate between numbers and months of the year.</p>
+        <div class="sequence-example">
+          <div class="seq-node">1</div>
+          <div class="seq-arrow">&rarr;</div>
+          <div class="seq-node">Jan</div>
+          <div class="seq-arrow">&rarr;</div>
+          <div class="seq-node">2</div>
+          <div class="seq-arrow">&rarr;</div>
+          <div class="seq-node">Feb</div>
+          <div class="seq-arrow">&rarr;</div>
+          <div class="seq-node">3</div>
+          <div class="seq-arrow">&rarr;</div>
+          <div class="seq-node">Mar</div>
+          <div class="seq-dots">&hellip;</div>
+        </div>
+        <button class="btn btn-primary" data-action="next">Got it</button>
       </div>
     </div>
 
+    <!-- Round 2: Numbers <-> Months -->
     <div class="screen hidden" id="screen-round2">
       <div class="game-area">
         <div class="game-hud">
@@ -142,16 +164,32 @@
       </div>
     </div>
 
-    <!-- Interstitial 3 -->
+    <!-- Interstitial: Round 3 Rule Introduction -->
     <div class="screen hidden" id="screen-interstitial3">
       <div class="screen-content center-content">
         <span class="round-badge">Round 2 complete</span>
         <h2 class="heading">Round 3 of 3</h2>
-        <p class="body-text">Final round &mdash; the most nodes yet. Stay focused.</p>
-        <button class="btn btn-primary" data-action="next">Continue</button>
+        <p class="interstitial-subheader">New rule: everything in reverse</p>
+        <p class="body-text">Now count backward &mdash; from 26 and Z &mdash; alternating numbers and letters.</p>
+        <div class="sequence-example">
+          <div class="seq-node">26</div>
+          <div class="seq-arrow">&rarr;</div>
+          <div class="seq-node">Z</div>
+          <div class="seq-arrow">&rarr;</div>
+          <div class="seq-node">25</div>
+          <div class="seq-arrow">&rarr;</div>
+          <div class="seq-node">Y</div>
+          <div class="seq-arrow">&rarr;</div>
+          <div class="seq-node">24</div>
+          <div class="seq-arrow">&rarr;</div>
+          <div class="seq-node">X</div>
+          <div class="seq-dots">&hellip;</div>
+        </div>
+        <button class="btn btn-primary" data-action="next">Got it</button>
       </div>
     </div>
 
+    <!-- Round 3: Reverse Numbers <-> Reverse Letters -->
     <div class="screen hidden" id="screen-round3">
       <div class="game-area">
         <div class="game-hud">

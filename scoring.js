@@ -1,17 +1,27 @@
 /**
  * Scoring algorithm, results generation, and style classification for Pathfinder.
+ *
+ * Round structure (12 nodes each):
+ *   Round 1: Numbers <-> Letters (baseline set-switching)
+ *   Round 2: Numbers <-> Months (semantic retrieval)
+ *   Round 3: Reverse Numbers <-> Reverse Letters (inhibition + reversal)
  */
 
 var Scoring = (function () {
   // --- Tunable constants ---
-  var PAR_TIMES = [10, 18, 30]; // seconds per round
-  var PENALTY_PER_SECOND = 3;   // points lost per second over par
+  var PAR_TIMES = [20, 30, 45]; // seconds per round
+  var PENALTY_PER_SECOND = 2;   // points lost per second over par
   var ERROR_COST = 5;           // points lost per error
   var ROUND_WEIGHTS = [0.20, 0.30, 0.50];
 
+  var ROUND_LABELS = [
+    { short: 'Baseline Switching', rule: 'Numbers \u2194 Letters' },
+    { short: 'Semantic Retrieval', rule: 'Numbers \u2194 Months' },
+    { short: 'Inhibition + Reversal', rule: 'Reverse Numbers \u2194 Reverse Letters' }
+  ];
+
   /**
    * Compute score for a single round.
-   * round_score = max(0, max(0, 100 - (time - par) * penalty) - errors * errorCost)
    */
   function roundScore(time, errors, roundIndex) {
     var par = PAR_TIMES[roundIndex];
@@ -32,62 +42,69 @@ var Scoring = (function () {
   }
 
   /**
-   * Classify pathfinding style based on speed-accuracy profile.
+   * Classify pathfinding style based on speed-accuracy profile across rounds.
    */
   function classifyStyle(rounds) {
-    var totalErrors = 0;
+    var r1 = roundScore(rounds[0].time, rounds[0].errors, 0);
+    var r2 = roundScore(rounds[1].time, rounds[1].errors, 1);
+    var r3 = roundScore(rounds[2].time, rounds[2].errors, 2);
+
+    var totalErrors = rounds[0].errors + rounds[1].errors + rounds[2].errors;
     var totalOverPar = 0;
     for (var i = 0; i < rounds.length; i++) {
-      totalErrors += rounds[i].errors;
       totalOverPar += Math.max(0, rounds[i].time - PAR_TIMES[i]);
     }
-
     var avgOverPar = totalOverPar / rounds.length;
-    var avgErrors = totalErrors / rounds.length;
-    var fast = avgOverPar < 3;
-    var accurate = avgErrors < 1;
 
-    // Check for improvement pattern
-    var improving = rounds.length >= 3 &&
-      rounds[2].time / PAR_TIMES[2] < rounds[0].time / PAR_TIMES[0];
+    var fast = avgOverPar < 4;
+    var accurate = totalErrors <= 2;
+    var consistent = Math.abs(r1 - r3) < 15;
 
-    // Check for strong start pattern
-    var strongStart = rounds.length >= 3 &&
-      roundScore(rounds[0].time, rounds[0].errors, 0) > 85 &&
-      roundScore(rounds[2].time, rounds[2].errors, 2) < 60;
-
-    if (strongStart) {
+    // Reversal-Challenged: R1 and R2 are strong, R3 drops significantly
+    if (r1 >= 60 && r2 >= 50 && r3 < r1 - 25 && r3 < r2 - 20) {
       return {
-        label: 'Strong Starter',
-        description: 'You came out sharp and focused, with excellent performance on the simpler rounds. As complexity increased, the challenge grew — which is completely normal. This pattern suggests strong foundational skills that could be extended with practice on complex tasks.'
+        label: 'The Reversal-Challenged',
+        description: 'Rounds 1 and 2 were strong, but Round 3 \u2014 the reversal round \u2014 showed a significant drop in speed, accuracy, or both. The forward sequences are well-handled, but suppressing the automatic forward response is where the challenge lives. In daily life, this person may notice more friction when they have to do something \u201Cbackward\u201D \u2014 like retracing steps, reversing a decision, or mentally counting down.'
       };
     }
 
-    if (improving) {
+    // Strong Starter: R1 is great, drops off in later rounds
+    if (r1 >= 75 && r3 < r1 - 20 && r2 < r1 - 10) {
       return {
-        label: 'Steady Builder',
-        description: 'You found your rhythm as you went, improving relative to the difficulty across rounds. This warming-up pattern suggests that with a bit more practice, your starting performance could match your peak performance.'
+        label: 'The Strong Starter',
+        description: 'Fast and accurate in Round 1, but both speed and accuracy drop as rules change. The baseline switching ability is solid, but the added cognitive layers in Rounds 2 and 3 created more friction. In daily life, this person handles familiar routines well but may find it harder to adapt when the rules change mid-task.'
       };
     }
 
-    if (fast && accurate) {
+    // Adaptive Builder: improves or stays stable across rounds
+    var improving = r3 >= r1 - 5 && r3 >= r2 - 5;
+    if (improving && !consistent) {
       return {
-        label: 'Balanced Pathfinder',
-        description: 'You combined speed and accuracy effectively throughout the test. This balance is a hallmark of strong executive function — the ability to move quickly while still tracking the correct sequence.'
+        label: 'The Adaptive Builder',
+        description: 'Performance improves or stays stable from Round 1 to Round 3, even as the rules got harder. Warms up into the task and adapts to new rules efficiently. In daily life, this person may take a moment to get oriented but handles increasing complexity well once engaged.'
       };
     }
 
+    // Steady Performer: consistent across all rounds
+    if (consistent && accurate) {
+      return {
+        label: 'The Steady Performer',
+        description: 'Consistent speed and accuracy across all three rounds. The increasing cognitive demands didn\u2019t meaningfully slow you down. In daily life, this person handles sudden rule changes, multi-step instructions, and unexpected pivots without losing a beat.'
+      };
+    }
+
+    // Speed-First Thinker: fast but errors increase with complexity
     if (fast && !accurate) {
       return {
-        label: 'Fast Scanner',
-        description: 'You moved through the test quickly, prioritizing speed. A few errors crept in along the way, which is a common trade-off. Slowing down just slightly on the trickiest switches could preserve your speed advantage while catching more mistakes.'
+        label: 'The Speed-First Thinker',
+        description: 'Fast across the board, but errors increase as rules get harder. Prioritizes momentum over verification. In daily life, this person moves quickly through tasks but may occasionally miss details when things get complex.'
       };
     }
 
-    // slow and accurate, or slow and inaccurate
+    // Careful Processor: slower but accurate
     return {
-      label: 'Careful Navigator',
-      description: 'You took a measured, deliberate approach to the test. This careful strategy helps minimize errors, and with practice, you can gradually increase your pace while maintaining that accuracy.'
+      label: 'The Careful Processor',
+      description: 'Slower overall but highly accurate, especially in the harder rounds. Takes time to verify before committing. In daily life, this person is methodical and precise \u2014 they rarely make mistakes but may feel slower in fast-paced situations.'
     };
   }
 
@@ -96,8 +113,9 @@ var Scoring = (function () {
    */
   function generateSummary(rounds, score) {
     var parts = [];
-    var r1Score = roundScore(rounds[0].time, rounds[0].errors, 0);
-    var r3Score = roundScore(rounds[2].time, rounds[2].errors, 2);
+    var r1 = roundScore(rounds[0].time, rounds[0].errors, 0);
+    var r2 = roundScore(rounds[1].time, rounds[1].errors, 1);
+    var r3 = roundScore(rounds[2].time, rounds[2].errors, 2);
 
     if (score >= 80) {
       parts.push('Strong overall performance.');
@@ -109,10 +127,12 @@ var Scoring = (function () {
       parts.push('This was a challenging test, and you stuck with it through all three rounds.');
     }
 
-    if (r1Score > r3Score + 20) {
-      parts.push('Your performance was strongest in the earlier, simpler rounds, with more challenge as complexity increased.');
-    } else if (r3Score > r1Score + 10) {
-      parts.push('Notably, you got stronger as the test progressed, suggesting a good warm-up effect.');
+    if (r1 > r3 + 25) {
+      parts.push('Your performance was strongest in Round 1 (baseline switching), with the reversal round presenting the most challenge.');
+    } else if (r3 > r1 + 10) {
+      parts.push('Notably, you got stronger as the test progressed \u2014 even as the rules got harder.');
+    } else if (r2 < r1 - 15 && r2 < r3 - 10) {
+      parts.push('The month sequence in Round 2 appeared to be the trickiest for you, which is common \u2014 months require deeper retrieval than the alphabet.');
     }
 
     var totalErrors = rounds[0].errors + rounds[1].errors + rounds[2].errors;
@@ -121,7 +141,7 @@ var Scoring = (function () {
     } else if (totalErrors <= 2) {
       parts.push('You kept errors to a minimum, showing good accuracy throughout.');
     } else if (totalErrors > 5) {
-      parts.push('There were some missteps along the way — the number-letter switches can be tricky under time pressure.');
+      parts.push('There were some missteps along the way \u2014 switching between different rule sets can be tricky under time pressure.');
     }
 
     return parts.join(' ');
@@ -132,15 +152,15 @@ var Scoring = (function () {
    */
   function generateAnalogy(score) {
     if (score >= 85) {
-      return 'Think of it like navigating a busy kitchen while cooking multiple dishes — you kept track of everything and stayed on pace.';
+      return 'Think of it like navigating a busy kitchen while cooking multiple dishes \u2014 you kept track of everything and stayed on pace.';
     }
     if (score >= 65) {
-      return 'Imagine switching between reading a map and checking your mirrors while driving — you managed the task-switching well, with occasional moments of extra thought.';
+      return 'Imagine switching between reading a map and checking your mirrors while driving \u2014 you managed the task-switching well, with occasional moments of extra thought.';
     }
     if (score >= 40) {
-      return 'It\'s similar to following a recipe while having a conversation — manageable, but the back-and-forth requires real mental effort.';
+      return 'It\u2019s similar to following a recipe while having a conversation \u2014 manageable, but the back-and-forth requires real mental effort.';
     }
-    return 'Think of it like learning a new board game with alternating rules — it takes practice to build the pattern into something automatic.';
+    return 'Think of it like learning a new board game with alternating rules \u2014 it takes practice to build the pattern into something automatic.';
   }
 
   /**
@@ -179,45 +199,90 @@ var Scoring = (function () {
   }
 
   /**
+   * Generate an interpretation note comparing round performance.
+   */
+  function generateInterpretation(rounds) {
+    var r1 = roundScore(rounds[0].time, rounds[0].errors, 0);
+    var r2 = roundScore(rounds[1].time, rounds[1].errors, 1);
+    var r3 = roundScore(rounds[2].time, rounds[2].errors, 2);
+
+    var consistent = Math.abs(r1 - r3) < 12 && Math.abs(r1 - r2) < 12;
+    if (consistent) {
+      return 'Your time was consistent across all three rounds, even as the rules got harder \u2014 strong cognitive flexibility under load.';
+    }
+
+    if (r3 < r1 - 25 && r3 < r2 - 15) {
+      return 'Round 3 took significantly longer than Rounds 1 and 2, suggesting the reversal demand was where your processing was most challenged.';
+    }
+
+    if (r2 < r1 - 15 && r2 < r3) {
+      return 'You were fastest in Round 1 but slowed in Round 2 \u2014 the month sequence may have introduced more hesitation than the alphabet.';
+    }
+
+    if (r1 > r2 && r2 > r3) {
+      return 'Performance declined gradually as the rules got more complex, which is a normal pattern \u2014 each round added a new cognitive demand.';
+    }
+
+    if (r3 >= r1) {
+      return 'You adapted well to the increasing difficulty, maintaining or improving your pace through the hardest round.';
+    }
+
+    return 'Your performance varied across rounds, reflecting the different cognitive demands of each rule set.';
+  }
+
+  /**
    * Generate personalized suggestions based on patterns.
    */
   function generateSuggestions(rounds, score) {
     var suggestions = [];
+    var r1 = roundScore(rounds[0].time, rounds[0].errors, 0);
+    var r2 = roundScore(rounds[1].time, rounds[1].errors, 1);
+    var r3 = roundScore(rounds[2].time, rounds[2].errors, 2);
     var totalErrors = rounds[0].errors + rounds[1].errors + rounds[2].errors;
-    var avgOverPar = 0;
+    var totalOverPar = 0;
     for (var i = 0; i < rounds.length; i++) {
-      avgOverPar += Math.max(0, rounds[i].time - PAR_TIMES[i]);
+      totalOverPar += Math.max(0, rounds[i].time - PAR_TIMES[i]);
     }
-    avgOverPar /= rounds.length;
+    var avgOverPar = totalOverPar / rounds.length;
 
-    // Error-heavy — practice task-switching in daily life
-    if (totalErrors > 3) {
-      suggestions.push('Try cooking a meal with multiple dishes on different timers. Juggling stove, oven, and prep tasks builds the same mental switching skill this test measures.');
+    // Round 3 was the clear weak point (reversal difficulty)
+    if (r3 < r1 - 20 && r3 < r2 - 15) {
+      suggestions.push('Practice \u201Cbackward\u201D thinking in small moments \u2014 count down from 20 while walking, spell short words backward, or mentally reverse a familiar route. These micro-exercises build the same inhibitory control that Round 3 tested.');
     }
 
-    // Slow but accurate — build processing speed
+    // Errors were high but speed was fast (speed-accuracy tradeoff)
+    if (avgOverPar < 5 && totalErrors > 3) {
+      suggestions.push('Your instinct is to move fast \u2014 that\u2019s a strength. Try a daily mindfulness practice, even just 5\u201310 minutes. Research shows it strengthens the attentional control needed to stay accurate under pressure.');
+    }
+
+    // Round 2 was surprisingly slower (semantic retrieval)
+    if (r2 < r1 - 15) {
+      suggestions.push('The month sequence requires pulling from a less \u201Cautomatic\u201D mental list than the alphabet. Strengthening retrieval fluency \u2014 like quickly naming months backward, listing items in a category under time pressure, or playing rapid word-association games \u2014 can make this kind of access faster.');
+    }
+
+    // Consistent across all rounds
+    if (Math.abs(r1 - r3) < 12 && Math.abs(r1 - r2) < 12 && score >= 60) {
+      suggestions.push('Your cognitive flexibility held up well under increasing demand. To keep building on this, look for daily opportunities to switch between tasks intentionally \u2014 like alternating between two different types of work in short blocks rather than doing one long stretch.');
+    }
+
+    // Slow but accurate overall
     if (avgOverPar > 10 && totalErrors <= 2) {
-      suggestions.push('Pick up a fast-paced card game like Set or Dutch Blitz. They train your brain to scan, recognize patterns, and act quickly — the same visual processing speed tested here.');
+      suggestions.push('Pick up a fast-paced card game like Set or Dutch Blitz. They train your brain to scan, recognize patterns, and act quickly \u2014 building the same visual processing speed tested here.');
     }
 
-    // Fast but error-prone — build sustained attention
-    if (avgOverPar < 5 && totalErrors > 2) {
-      suggestions.push('Try a daily mindfulness practice, even just 5-10 minutes. Research shows it strengthens the attentional control needed to stay accurate under pressure.');
-    }
-
-    // Got worse over rounds — build cognitive endurance
-    if (roundScore(rounds[2].time, rounds[2].errors, 2) < roundScore(rounds[0].time, rounds[0].errors, 0) - 25) {
+    // Performance degraded across rounds (cognitive endurance)
+    if (r1 > r2 && r2 > r3 && r1 - r3 > 20) {
       suggestions.push('Sustained focus improves with aerobic exercise. Even 20-minute walks or jogs have been shown to boost the kind of cognitive stamina that helps on longer, more complex tasks.');
     }
 
-    // General improvement suggestion
-    if (score < 70) {
-      suggestions.push('Learning a musical instrument — or picking one back up — is one of the best ways to build mental flexibility. Reading music while coordinating your hands requires exactly the kind of rapid task-switching this test measures.');
+    // General improvement for lower scores
+    if (score < 60 && suggestions.length < 2) {
+      suggestions.push('Learning a musical instrument \u2014 or picking one back up \u2014 is one of the best ways to build mental flexibility. Reading music while coordinating your hands requires exactly the kind of rapid task-switching this test measures.');
     }
 
     // High score encouragement
     if (score >= 85 && suggestions.length === 0) {
-      suggestions.push('To keep sharpening these skills, try learning something that demands real-time decision-making — like a new language, a strategy board game, or an improvisational hobby like jazz or debate.');
+      suggestions.push('To keep sharpening these skills, try learning something that demands real-time decision-making \u2014 like a new language, a strategy board game, or an improvisational hobby like jazz or debate.');
     }
 
     return suggestions.slice(0, 3);
@@ -228,10 +293,10 @@ var Scoring = (function () {
    */
   function generateTakeaway(score) {
     if (score >= 80) {
-      return 'Your pathfinding ability is strong. The mental flexibility you demonstrated — switching between numbers and letters under pressure — is a skill that serves you well in everyday multitasking and decision-making.';
+      return 'Your pathfinding ability is strong. The mental flexibility you demonstrated \u2014 switching between different rule sets under pressure \u2014 is a skill that serves you well in everyday multitasking and decision-making.';
     }
     if (score >= 55) {
-      return 'You showed solid pathfinding ability with room to grow. The good news is that the cognitive skills this test measures — mental flexibility and processing speed — are responsive to practice.';
+      return 'You showed solid pathfinding ability with room to grow. The good news is that the cognitive skills this test measures \u2014 mental flexibility, processing speed, and inhibitory control \u2014 are all responsive to practice.';
     }
     return 'Remember that this is a snapshot, not a verdict. Cognitive flexibility is a skill that develops with practice, and many factors (sleep, stress, time of day) can influence any single session.';
   }
@@ -245,6 +310,7 @@ var Scoring = (function () {
     var summary = generateSummary(rounds, score);
     var analogy = generateAnalogy(score);
     var highlights = roundHighlights(rounds);
+    var interpretation = generateInterpretation(rounds);
     var suggestions = generateSuggestions(rounds, score);
     var takeaway = generateTakeaway(score);
 
@@ -254,9 +320,11 @@ var Scoring = (function () {
       summary: summary,
       analogy: analogy,
       highlights: highlights,
+      interpretation: interpretation,
       suggestions: suggestions,
       takeaway: takeaway,
-      rounds: rounds
+      rounds: rounds,
+      roundLabels: ROUND_LABELS
     };
   }
 

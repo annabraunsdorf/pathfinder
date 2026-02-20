@@ -7,29 +7,29 @@
 
   // --- Screen flow ---
   var SCREENS = [
-    'title', 'measures', 'howItWorks',
+    'title', 'processingSpeed', 'cognitiveFlexibility', 'howItWorks',
     'practice', 'practiceComplete',
     'round1', 'interstitial2',
     'round2', 'interstitial3',
     'round3', 'results'
   ];
 
-  // --- Round config ---
+  // --- Round config (12 nodes each, different cognitive rules) ---
   var ROUND_CONFIG = {
-    practice: { count: 6, isPractice: true },
-    round1:   { count: 8, isPractice: false },
-    round2:   { count: 11, isPractice: false },
-    round3:   { count: 15, isPractice: false }
+    practice: { roundType: 'practice', isPractice: true },
+    round1:   { roundType: 'numbersLetters', isPractice: false },
+    round2:   { roundType: 'numbersMonths', isPractice: false },
+    round3:   { roundType: 'reverseNumbersLetters', isPractice: false }
   };
 
   // --- State ---
   var currentScreen = 'title';
   var roundData = []; // { time, errors } per round
-  var activeRound = null; // { nodes, sequence, currentIndex, startTime, errors, timerRAF, roundKey }
+  var activeRound = null;
 
   // --- DOM helpers ---
   function $(id) { return document.getElementById(id); }
-  function getScreen(name) { return $('screen-' + name); }
+  function getScreen(name) { return document.getElementById('screen-' + name); }
 
   // --- Screen transitions ---
   function showScreen(name) {
@@ -66,9 +66,9 @@
     var w = area.clientWidth;
     var h = area.clientHeight;
 
-    var layout = Nodes.generateLayout(w, h, config.count);
-    var rendered = Nodes.renderNodes(container, layout);
-    var sequence = Nodes.generateSequence(config.count);
+    var layout = Nodes.generateLayout(w, h, config.roundType);
+    var rendered = Nodes.renderNodes(container, layout, config.roundType);
+    var sequence = Nodes.generateSequence(config.roundType);
 
     activeRound = {
       nodes: rendered,
@@ -103,11 +103,9 @@
 
   function highlightNextTarget() {
     if (!activeRound || !activeRound.isPractice) return;
-    // Remove previous pulse
     activeRound.nodes.forEach(function (n) {
       n.element.classList.remove('pulse');
     });
-    // Add pulse to current target
     var targetLabel = activeRound.sequence[activeRound.currentIndex];
     var targetNode = findNode(targetLabel);
     if (targetNode) {
@@ -128,13 +126,11 @@
     var expected = activeRound.sequence[activeRound.currentIndex];
 
     if (label === expected) {
-      // Correct tap
       var node = findNode(label);
       if (!node) return;
       node.element.classList.add('correct');
       node.element.classList.remove('pulse');
 
-      // Draw line from previous node
       if (activeRound.currentIndex > 0) {
         var prevLabel = activeRound.sequence[activeRound.currentIndex - 1];
         var prevNode = findNode(prevLabel);
@@ -145,14 +141,12 @@
 
       activeRound.currentIndex++;
 
-      // Check completion
       if (activeRound.currentIndex >= activeRound.sequence.length) {
         completeRound();
       } else if (activeRound.isPractice) {
         highlightNextTarget();
       }
     } else {
-      // Wrong tap
       activeRound.errors++;
       var wrongNode = findNode(label);
       if (wrongNode && !wrongNode.element.classList.contains('correct')) {
@@ -169,7 +163,6 @@
     var roundKey = activeRound.roundKey;
     var isPractice = activeRound.isPractice;
 
-    // Stop timer
     if (activeRound.timerRAF) {
       cancelAnimationFrame(activeRound.timerRAF);
     }
@@ -183,7 +176,6 @@
 
     activeRound = null;
 
-    // Short delay then advance
     setTimeout(function () {
       if (isPractice) {
         showScreen('practiceComplete');
@@ -247,13 +239,16 @@
     html += '<p class="results-text-secondary">' + r.style.description + '</p>';
     html += '</div></div>';
 
-    // 6. Round breakdown
+    // 6. Round breakdown with cognitive labels
     html += '<div class="results-section">';
     html += '<div class="results-section-title">Round by round</div>';
     html += '<div class="results-card"><div class="round-breakdown">';
     for (var i = 0; i < r.rounds.length; i++) {
       html += '<div class="round-row">';
-      html += '<div><span class="round-row-label">Round ' + (i + 1) + '</span>';
+      html += '<div>';
+      html += '<span class="round-row-label">Round ' + (i + 1) + '</span>';
+      html += '<span class="round-row-rule">' + r.roundLabels[i].short + '</span>';
+      html += '<span class="round-row-rule-detail">' + r.roundLabels[i].rule + '</span>';
       if (r.highlights[i]) {
         html += '<span class="round-row-note">' + r.highlights[i] + '</span>';
       }
@@ -264,7 +259,10 @@
       }
       html += '</div></div>';
     }
-    html += '</div></div></div>';
+    html += '</div>';
+    // Interpretation note
+    html += '<div class="interpretation-note">' + r.interpretation + '</div>';
+    html += '</div></div>';
 
     // 7. Suggestions
     if (r.suggestions.length > 0) {
@@ -291,7 +289,6 @@
     var progress = (score / 100) * circumference;
     var offset = circumference - progress;
 
-    // Pick color based on score
     var color = '#4ADE80';
     if (score < 40) color = '#EF4444';
     else if (score < 65) color = '#FBBF24';
@@ -312,7 +309,6 @@
   function reset() {
     roundData = [];
     activeRound = null;
-    // Clear all node containers and SVGs
     ['practice', 'round1', 'round2', 'round3'].forEach(function (key) {
       var container = $(key + '-nodes');
       var svg = $(key + '-lines');
@@ -333,7 +329,6 @@
     else if (action === 'reset') reset();
   });
 
-  // Prevent context menu on long press
   document.addEventListener('contextmenu', function (e) {
     e.preventDefault();
   });

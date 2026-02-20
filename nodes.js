@@ -4,30 +4,58 @@
 
 var Nodes = (function () {
   var NODE_SIZE = 52;
-  var MIN_DISTANCE = 70;
+  var NODE_SIZE_WIDE = 58; // for 3-char labels (months) and 2-digit numbers
+  var MIN_DISTANCE = 72;
   var EDGE_PADDING = 30;
   var HUD_HEIGHT = 60;
   var MAX_PLACEMENT_RETRIES = 200;
   var MAX_FULL_RETRIES = 50;
 
   /**
-   * Generate the alternating sequence: 1, A, 2, B, 3, C, ...
+   * Generate the sequence for a given round type.
+   * Types: 'practice', 'numbersLetters', 'numbersMonths', 'reverseNumbersLetters'
    */
-  function generateSequence(count) {
-    var seq = [];
-    var numIndex = 1;
-    var letterIndex = 0;
-    var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    for (var i = 0; i < count; i++) {
-      if (i % 2 === 0) {
-        seq.push(String(numIndex));
-        numIndex++;
-      } else {
-        seq.push(letters[letterIndex]);
-        letterIndex++;
-      }
+  function generateSequence(roundType) {
+    var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+
+    switch (roundType) {
+      case 'practice':
+        // 1, A, 2, B, 3, C
+        return ['1', 'A', '2', 'B', '3', 'C'];
+
+      case 'numbersLetters':
+        // 1, A, 2, B, 3, C, 4, D, 5, E, 6, F
+        return ['1', 'A', '2', 'B', '3', 'C', '4', 'D', '5', 'E', '6', 'F'];
+
+      case 'numbersMonths':
+        // 1, Jan, 2, Feb, 3, Mar, 4, Apr, 5, May, 6, Jun
+        return ['1', 'Jan', '2', 'Feb', '3', 'Mar', '4', 'Apr', '5', 'May', '6', 'Jun'];
+
+      case 'reverseNumbersLetters':
+        // 26, Z, 25, Y, 24, X, 23, W, 22, V, 21, U
+        return ['26', 'Z', '25', 'Y', '24', 'X', '23', 'W', '22', 'V', '21', 'U'];
+
+      default:
+        return [];
     }
-    return seq;
+  }
+
+  /**
+   * Check if a label needs the wider node size.
+   */
+  function needsWideNode(label) {
+    return label.length >= 2;
+  }
+
+  /**
+   * Get the appropriate node size for a sequence.
+   * If any label is wide, use the wide size for all nodes (consistency).
+   */
+  function getNodeSize(sequence) {
+    for (var i = 0; i < sequence.length; i++) {
+      if (needsWideNode(sequence[i])) return NODE_SIZE_WIDE;
+    }
+    return NODE_SIZE;
   }
 
   /**
@@ -68,16 +96,17 @@ var Nodes = (function () {
    * Generate node layout via rejection sampling.
    * Returns array of { label, x, y } where x,y are center positions.
    */
-  function generateLayout(containerWidth, containerHeight, count) {
-    var sequence = generateSequence(count);
-    var halfNode = NODE_SIZE / 2;
+  function generateLayout(containerWidth, containerHeight, roundType) {
+    var sequence = generateSequence(roundType);
+    var count = sequence.length;
+    var nodeSize = getNodeSize(sequence);
+    var halfNode = nodeSize / 2;
     var minX = EDGE_PADDING + halfNode;
     var maxX = containerWidth - EDGE_PADDING - halfNode;
     var minY = HUD_HEIGHT + EDGE_PADDING + halfNode;
     var maxY = containerHeight - EDGE_PADDING - halfNode;
 
     if (maxX <= minX || maxY <= minY) {
-      // Fallback: tiny container — just stack them
       return sequence.map(function (label, i) {
         return { label: label, x: containerWidth / 2, y: 80 + i * 60 };
       });
@@ -140,9 +169,12 @@ var Nodes = (function () {
    * Render nodes into a container element.
    * Returns array of { label, element, x, y }.
    */
-  function renderNodes(container, layout) {
+  function renderNodes(container, layout, roundType) {
     container.innerHTML = '';
-    var halfNode = NODE_SIZE / 2;
+    var sequence = generateSequence(roundType);
+    var nodeSize = getNodeSize(sequence);
+    var halfNode = nodeSize / 2;
+
     return layout.map(function (node) {
       var el = document.createElement('div');
       el.className = 'node';
@@ -150,6 +182,16 @@ var Nodes = (function () {
       el.dataset.label = node.label;
       el.style.left = (node.x - halfNode) + 'px';
       el.style.top = (node.y - halfNode) + 'px';
+      el.style.width = nodeSize + 'px';
+      el.style.height = nodeSize + 'px';
+
+      // Slightly smaller font for longer labels
+      if (node.label.length >= 3) {
+        el.style.fontSize = '14px';
+      } else if (node.label.length === 2) {
+        el.style.fontSize = '16px';
+      }
+
       container.appendChild(el);
       return { label: node.label, element: el, x: node.x, y: node.y };
     });
