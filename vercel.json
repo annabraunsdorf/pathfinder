@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/pathfinder-report",
+      "destination": "/api/pathfinder-report"
+    }
+  ]
+}

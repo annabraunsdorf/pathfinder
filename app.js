@@ -11,7 +11,7 @@
     'practice', 'practiceComplete',
     'round1', 'interstitial2',
     'round2', 'interstitial3',
-    'round3', 'results'
+    'round3', 'processing', 'results'
   ];
 
   // --- Round config (12 nodes each, different cognitive rules) ---
@@ -203,107 +203,69 @@
 
   // --- Results ---
   function showResults() {
-    var results = Scoring.generateResults(roundData);
-    renderResults(results);
-    showScreen('results');
+    showScreen('processing');
+
+    var score = Scoring.finalScore(roundData);
+    var progressBar = $('progress-bar');
+    var progressText = $('progress-text');
+
+    // Attempt AI-generated report
+    Report.generateReport(roundData, score, function (progress) {
+      if (progressBar) {
+        progressBar.style.width = progress + '%';
+      }
+    }).then(function (html) {
+      var frame = $('report-frame');
+      if (frame) {
+        frame.srcdoc = html;
+      }
+      showScreen('results');
+    }).catch(function (err) {
+      console.error('[Pathfinder] Report generation failed:', err);
+      if (progressText) {
+        progressText.textContent = 'Report generation failed. Showing summary...';
+      }
+      // Fall back to the deterministic report after a brief pause
+      setTimeout(function () {
+        var fallbackResults = Scoring.generateResults(roundData);
+        var fallbackHtml = buildFallbackReportHtml(fallbackResults);
+        var frame = $('report-frame');
+        if (frame) {
+          frame.srcdoc = fallbackHtml;
+        }
+        showScreen('results');
+      }, 1500);
+    });
   }
 
-  function renderResults(r) {
-    var container = $('results-container');
-    var html = '';
+  /**
+   * Build a simple fallback HTML report when the AI call fails.
+   * Uses the deterministic Scoring module results.
+   */
+  function buildFallbackReportHtml(r) {
+    var e = Report.escapeHtml;
+    var date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    var percentile = Report.estimatePercentile(r.score);
+    var impactLabel = r.score >= 65 ? 'Positive' : r.score >= 40 ? 'Neutral' : 'Needs Attention';
+    var impactClass = r.score >= 65 ? 'positive' : r.score >= 40 ? 'neutral' : 'attention';
 
-    // 1. Score ring
-    html += renderScoreRing(r.score);
+    var content = {
+      scoreSummary: r.summary,
+      everydayAnalogy: r.analogy,
+      pathfindingStyle: { name: r.style.label, description: r.style.description },
+      scoreReflection: 'This score is based on your Pathfinder performance today. It reflects this specific task on this specific day, not a permanent measure. Factors like energy, sleep, and environment shape performance. Retesting can show whether the pattern holds.',
+      narrative: r.summary + ' ' + r.interpretation,
+      suggestions: r.suggestions.map(function (s) { return { title: 'Suggestion', body: s }; }),
+      takeaway: r.takeaway
+    };
 
-    // 2. Summary
-    html += '<div class="results-section">';
-    html += '<div class="results-card"><p class="results-text">' + r.summary + '</p></div>';
-    html += '</div>';
-
-    // 3. Everyday analogy
-    html += '<div class="results-section">';
-    html += '<div class="results-section-title">In everyday terms</div>';
-    html += '<div class="results-card"><p class="results-text-secondary">' + r.analogy + '</p></div>';
-    html += '</div>';
-
-    // 4. Disclaimer
-    html += '<div class="disclaimer-card">';
-    html += '<p class="disclaimer-text">This is an informal cognitive exercise, not a clinical assessment. Results are meant for personal insight and should not be used for medical or diagnostic purposes.</p>';
-    html += '</div>';
-
-    // 5. Style classification
-    html += '<div class="results-section">';
-    html += '<div class="results-section-title">Your pathfinding style</div>';
-    html += '<div class="results-card">';
-    html += '<div class="style-label">' + r.style.label + '</div>';
-    html += '<p class="results-text-secondary">' + r.style.description + '</p>';
-    html += '</div></div>';
-
-    // 6. Round breakdown with cognitive labels
-    html += '<div class="results-section">';
-    html += '<div class="results-section-title">Round by round</div>';
-    html += '<div class="results-card"><div class="round-breakdown">';
-    for (var i = 0; i < r.rounds.length; i++) {
-      html += '<div class="round-row">';
-      html += '<div>';
-      html += '<span class="round-row-label">Round ' + (i + 1) + '</span>';
-      html += '<span class="round-row-rule">' + r.roundLabels[i].short + '</span>';
-      html += '<span class="round-row-rule-detail">' + r.roundLabels[i].rule + '</span>';
-      if (r.highlights[i]) {
-        html += '<span class="round-row-note">' + r.highlights[i] + '</span>';
-      }
-      html += '</div>';
-      html += '<div class="round-row-stats">' + r.rounds[i].time.toFixed(1) + 's';
-      if (r.rounds[i].errors > 0) {
-        html += ' &middot; ' + r.rounds[i].errors + ' error' + (r.rounds[i].errors !== 1 ? 's' : '');
-      }
-      html += '</div></div>';
-      html += '<div class="round-detail-text">' + r.roundLabels[i].detail + '</div>';
-    }
-    html += '</div>';
-    // Interpretation note
-    html += '<div class="interpretation-note">' + r.interpretation + '</div>';
-    html += '</div></div>';
-
-    // 7. Suggestions
-    if (r.suggestions.length > 0) {
-      html += '<div class="results-section">';
-      html += '<div class="results-section-title">Tips for improvement</div>';
-      html += '<div class="results-card">';
-      for (var s = 0; s < r.suggestions.length; s++) {
-        html += '<div class="suggestion-item">' + r.suggestions[s] + '</div>';
-      }
-      html += '</div></div>';
-    }
-
-    // 8. Final takeaway
-    html += '<div class="final-takeaway">';
-    html += '<p class="final-takeaway-text">' + r.takeaway + '</p>';
-    html += '</div>';
-
-    container.innerHTML = html;
-  }
-
-  function renderScoreRing(score) {
-    var radius = 62;
-    var circumference = 2 * Math.PI * radius;
-    var progress = (score / 100) * circumference;
-    var offset = circumference - progress;
-
-    var color = '#4ADE80';
-    if (score < 40) color = '#EF4444';
-    else if (score < 65) color = '#FBBF24';
-
-    return '<div class="score-ring">' +
-      '<svg width="160" height="160" viewBox="0 0 160 160">' +
-      '<circle cx="80" cy="80" r="' + radius + '" stroke="#2A2A2E" stroke-width="8" fill="none"/>' +
-      '<circle cx="80" cy="80" r="' + radius + '" stroke="' + color + '" stroke-width="8" fill="none" ' +
-      'stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '" stroke-linecap="round"/>' +
-      '</svg>' +
-      '<div class="score-value">' +
-      '<span class="score-number" style="color:' + color + '">' + score + '</span>' +
-      '<span class="score-label">out of 100</span>' +
-      '</div></div>';
+    return Report.buildReportHtml({
+      content: content,
+      score: r.score,
+      rounds: r.rounds,
+      roundLabels: r.roundLabels,
+      date: date
+    });
   }
 
   // --- Reset ---
@@ -316,7 +278,10 @@
       if (container) container.innerHTML = '';
       if (svg) svg.innerHTML = '';
     });
-    $('results-container').innerHTML = '';
+    var frame = $('report-frame');
+    if (frame) frame.srcdoc = '';
+    var progressBar = $('progress-bar');
+    if (progressBar) progressBar.style.width = '0%';
     showScreen('title');
   }
 

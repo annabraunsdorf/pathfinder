@@ -226,18 +226,36 @@
       </div>
     </div>
 
-    <!-- Results Screen -->
+    <!-- Processing Screen -->
+    <div class="screen hidden" id="screen-processing">
+      <div class="screen-content center-content">
+        <div class="processing-container">
+          <h2 class="heading">Generating your report</h2>
+          <p class="body-text">Analyzing your performance across all three rounds...</p>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progress-bar"></div>
+          </div>
+          <p class="body-text-small" id="progress-text">This usually takes about 15 seconds.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Screen (HTML report in iframe) -->
     <div class="screen hidden" id="screen-results">
-      <div class="screen-content results-content">
-        <h2 class="heading">Your Results</h2>
-        <div id="results-container"></div>
-        <button class="btn btn-primary" data-action="reset">Done</button>
+      <div class="report-wrapper">
+        <iframe id="report-frame" class="report-frame" sandbox="allow-scripts"></iframe>
+        <div class="report-cta">
+          <button class="btn btn-primary" data-action="reset">Done</button>
+        </div>
       </div>
     </div>
   </div>
 
   <script src="nodes.js"></script>
   <script src="scoring.js"></script>
+  <script src="report.js"></script>
+  <!-- API key config: create config.js with Report.setApiKey('sk-ant-...') -->
+  <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
